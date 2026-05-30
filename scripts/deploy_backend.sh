@@ -18,12 +18,24 @@ scp "${JAR_FILE}" "${BACKEND_USER}@${BACKEND_HOST}:/tmp/${APP_NAME}.jar"
 echo "Stopping existing backend if it is running..."
 ssh "${BACKEND_USER}@${BACKEND_HOST}" "pgrep -f '[s]pring-petclinic-rest.jar' >/dev/null && pkill -f '[s]pring-petclinic-rest.jar' || true"
 
+# Wait a moment for the old process to die
+sleep 2
+
+echo "Verifying jar file was copied..."
+ssh "${BACKEND_USER}@${BACKEND_HOST}" "ls -lh /tmp/${APP_NAME}.jar"
+
 echo "Starting backend on ${BACKEND_HOST}:${APP_PORT}..."
 ssh "${BACKEND_USER}@${BACKEND_HOST}" "
+  export JENKINS_NODE_COOKIE=dontKillMe
   MYSQL_URL='${MYSQL_URL}' \
   MYSQL_USER='${MYSQL_USER}' \
   MYSQL_PASS='${MYSQL_PASS}' \
   SPRING_PROFILES_ACTIVE='${SPRING_PROFILES_ACTIVE}' \
-  nohup java -jar /tmp/${APP_NAME}.jar --server.port=${APP_PORT} \
+  nohup java -jar /tmp/${APP_NAME}.jar --server.port=${APP_PORT} --server.servlet.context-path=/petclinic \
     > /tmp/${APP_NAME}.log 2>&1 &
 "
+
+# Wait for the process to start
+sleep 3
+echo "Verifying backend process started..."
+ssh "${BACKEND_USER}@${BACKEND_HOST}" "pgrep -f '[s]pring-petclinic-rest.jar' || (echo 'ERROR: Java process failed to start'; cat /tmp/${APP_NAME}.log; exit 1)"
