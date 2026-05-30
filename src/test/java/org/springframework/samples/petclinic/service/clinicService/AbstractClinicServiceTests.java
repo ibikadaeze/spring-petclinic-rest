@@ -54,6 +54,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Michael Isvy
  * @author Vitaliy Fedoriv
  */
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 abstract class AbstractClinicServiceTests {
 
     @Autowired

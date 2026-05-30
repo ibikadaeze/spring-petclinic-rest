@@ -5,7 +5,8 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +19,7 @@ package org.springframework.samples.petclinic.service.clinicService;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.annotation.DirtiesContext;
 
 /**
  * <p> Integration test using the JDBC and HSQLDB profiles.
@@ -28,7 +30,8 @@ import org.springframework.test.context.TestPropertySource;
  */
 @SpringBootTest
 @ActiveProfiles({"hsqldb", "jdbc"})
-@TestPropertySource(properties = {"spring.sql.init.platform=hsqldb"})
-class ClinicServiceHsqlJdbcTests extends AbstractClinicServiceTests {
-
+@TestPropertySource(properties = {"spring.sql.init.platform=hsqldb"}) // Moved this up above the class
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+public class ClinicServiceHsqlJdbcTests extends AbstractClinicServiceTests {
+    // Leave this empty if there are no overridden methods needed here
 }
