@@ -19,6 +19,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext; // ADDED THIS IMPORT
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -36,14 +37,14 @@ class UserRestControllerTests {
     private UserMapper userMapper;
 
     @Autowired
-    private UserRestController userRestController;
+    private WebApplicationContext webApplicationContext; // CHANGED FROM CONTROLLER TO WEB CONTEXT
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void initVets() {
-        this.mockMvc = MockMvcBuilders.standaloneSetup(userRestController)
-            .setControllerAdvice(new ExceptionControllerAdvice()).build();
+        // CHANGED TO webAppContextSetup TO CORRECTLY BIND THE /api URL MAPPINGS
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
     }
 
     @Test
