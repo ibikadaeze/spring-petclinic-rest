@@ -3,6 +3,7 @@ package org.springframework.samples.petclinic.service.clinicService;
 import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
@@ -11,10 +12,10 @@ import org.springframework.test.context.ActiveProfiles;
  * @author Michael Isvy
  * @see AbstractClinicServiceTests AbstractClinicServiceTests for more details. </p>
  */
-
 @SpringBootTest
-@ActiveProfiles({"spring-data-jpa", "hsqldb"})
-class ClinicServiceSpringDataJpaTests extends AbstractClinicServiceTests {
+@ActiveProfiles({"spring-data-jpa", "hsqldb"}) // Moved this up above the class
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+public class ClinicServiceSpringDataJpaTests extends AbstractClinicServiceTests {
 
     @Autowired
     EntityManager entityManager;
