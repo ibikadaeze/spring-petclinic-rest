@@ -2,7 +2,7 @@
 set -euo pipefail
 
 echo "Running backend unit tests..."
-./mvnw test
+./mvnw clean test
 
 echo "Packaging backend..."
-./mvnw clean package -DskipTests
+./mvnw package -DskipTests

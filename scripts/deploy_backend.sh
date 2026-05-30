@@ -16,7 +16,7 @@ echo "Copying ${JAR_FILE} to ${BACKEND_HOST}..."
 scp "${JAR_FILE}" "${BACKEND_USER}@${BACKEND_HOST}:/tmp/${APP_NAME}.jar"
 
 echo "Stopping existing backend if it is running..."
-ssh "${BACKEND_USER}@${BACKEND_HOST}" "pkill -f ${APP_NAME}.jar || true"
+ssh "${BACKEND_USER}@${BACKEND_HOST}" "pgrep -f '[s]pring-petclinic-rest.jar' >/dev/null && pkill -f '[s]pring-petclinic-rest.jar' || true"
 
 echo "Starting backend on ${BACKEND_HOST}:${APP_PORT}..."
 ssh "${BACKEND_USER}@${BACKEND_HOST}" "
