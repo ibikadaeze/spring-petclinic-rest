@@ -35,7 +35,7 @@ ssh "${BACKEND_USER}@${BACKEND_HOST}" "
     > /tmp/${APP_NAME}.log 2>&1 &
 "
 
-# Wait for the process to start
-sleep 3
+# Wait for the process to start (Spring Boot can take 10-15 seconds to bind to port)
+sleep 5
 echo "Verifying backend process started..."
 ssh "${BACKEND_USER}@${BACKEND_HOST}" "pgrep -f '[s]pring-petclinic-rest.jar' || (echo 'ERROR: Java process failed to start'; cat /tmp/${APP_NAME}.log; exit 1)"
