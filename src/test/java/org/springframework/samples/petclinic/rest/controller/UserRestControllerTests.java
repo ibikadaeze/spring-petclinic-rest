@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.ComponentScan; // ADDED THIS IMPORT
 import org.springframework.http.MediaType;
 import org.springframework.samples.petclinic.mapper.UserMapper;
 import org.springframework.samples.petclinic.model.User;
@@ -19,13 +20,14 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext; // ADDED THIS IMPORT
+import org.springframework.web.context.WebApplicationContext;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @SpringJUnitConfig(classes = ApplicationTestConfig.class)
+@ComponentScan(basePackages = "org.springframework.samples.petclinic.rest.controller") // ADDED THIS TO FORCE CONTROLLER SCANNING
 @ExtendWith(MockitoExtension.class)
 @WebAppConfiguration
 class UserRestControllerTests {
@@ -37,13 +39,12 @@ class UserRestControllerTests {
     private UserMapper userMapper;
 
     @Autowired
-    private WebApplicationContext webApplicationContext; // CHANGED FROM CONTROLLER TO WEB CONTEXT
+    private WebApplicationContext webApplicationContext;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void initVets() {
-        // CHANGED TO webAppContextSetup TO CORRECTLY BIND THE /api URL MAPPINGS
         this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
     }
 
@@ -66,7 +67,7 @@ class UserRestControllerTests {
     @WithMockUser(roles = "ADMIN")
     void testCreateUserError() throws Exception {
         User user = new User();
-        user.setUsername(""); // set empty username to force 400 error
+        user.setUsername("");
         user.setPassword("password");
         user.setEnabled(true);
         ObjectMapper mapper = new ObjectMapper();
