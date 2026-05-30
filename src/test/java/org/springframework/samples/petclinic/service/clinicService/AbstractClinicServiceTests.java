@@ -193,4 +193,8 @@ abstract class AbstractClinicServiceTests {
         assertThat(visitArr[0].getDate()).isNotNull();
         assertThat(visitArr[0].getPet().getId()).isEqualTo(7);
     }
+
+    void clearCache() {
+        // Base implementation does nothing
+    }
 }
