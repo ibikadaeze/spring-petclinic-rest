@@ -20,6 +20,7 @@ ssh "${BACKEND_USER}@${BACKEND_HOST}" "pkill -f ${APP_NAME}.jar || true"
 
 echo "Starting backend on ${BACKEND_HOST}:${APP_PORT}..."
 ssh "${BACKEND_USER}@${BACKEND_HOST}" "
+  export JENKINS_NODE_COOKIE=dontKillMe
   MYSQL_URL='${MYSQL_URL}' \
   MYSQL_USER='${MYSQL_USER}' \
   MYSQL_PASS='${MYSQL_PASS}' \
