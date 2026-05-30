@@ -16,6 +16,7 @@
 
 package org.springframework.samples.petclinic.rest.controller;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +27,9 @@ import org.springframework.samples.petclinic.rest.dto.UserDto;
 import org.springframework.samples.petclinic.service.UserService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -44,8 +47,9 @@ public class UserRestController implements UsersApi {
 
 
     @PreAuthorize( "hasRole(@roles.ADMIN)" )
+    @PostMapping("/users")
     @Override
-    public ResponseEntity<UserDto> addUser(UserDto userDto) {
+    public ResponseEntity<UserDto> addUser(@Valid @RequestBody UserDto userDto) {
         HttpHeaders headers = new HttpHeaders();
         User user = userMapper.toUser(userDto);
         this.userService.saveUser(user);
