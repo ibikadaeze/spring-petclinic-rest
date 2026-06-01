@@ -19,21 +19,39 @@ def run_command(cmd, description, fail_on_error=True):
 def main():
     skip_tests = "--skip-tests" in sys.argv or "-st" in sys.argv
 
+    # Extract --step argument
+    step = "all"
+    for i, arg in enumerate(sys.argv[1:]):
+        if arg == "--step" and i + 1 < len(sys.argv) - 1:
+            step = sys.argv[i + 2]
+            break
+
     test_result = 0
-    if not skip_tests:
+
+    # Execute steps based on --step argument
+    if step in ("test", "all"):
         test_result = run_command(
             "./mvnw clean test -Dspring.profiles.active=hsqldb,spring-data-jpa",
             "Running backend unit tests",
             fail_on_error=False
         )
 
-    run_command(
-        "./mvnw package -DskipTests",
-        "Packaging backend",
-        fail_on_error=True
-    )
+    if step in ("compile", "all"):
+        if skip_tests or step != "all":
+            run_command(
+                "./mvnw compile -DskipTests",
+                "Compiling backend",
+                fail_on_error=True
+            )
 
-    print("\n✓ Backend build completed successfully!")
+    if step in ("package", "all"):
+        run_command(
+            "./mvnw package -DskipTests",
+            "Packaging backend",
+            fail_on_error=True
+        )
+
+    print(f"\n✓ Backend build completed successfully! (step: {step})")
 
     if test_result != 0:
         print("\n⚠ NOTE: Some tests failed, but package was built successfully.")
