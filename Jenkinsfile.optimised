@@ -1,0 +1,70 @@
+pipeline {
+    agent {
+        docker {
+            image 'maven:3.9.6-eclipse-temurin-21'
+            args '-v /var/lib/jenkins/.m2:/root/.m2'
+        }
+    }
+
+    environment {
+        BACKEND_HOST = '192.168.56.12'
+        BACKEND_USER = 'vagrant'
+        APP_NAME = 'spring-petclinic-rest'
+        APP_PORT = '9966'
+        SPRING_PROFILES_ACTIVE = 'mysql,spring-data-jpa'
+        MYSQL_URL = credentials('petclinic-mysql-url')
+        MYSQL_USER = credentials('petclinic-mysql-user')
+        MYSQL_PASS = credentials('petclinic-mysql-pass')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Parallel: Test & Dependency Audit') {
+            parallel {
+                stage('Unit Tests') {
+                    steps {
+                        sh 'python3 scripts/build_backend.py --step test'
+                    }
+                }
+                stage('Dependency Audit') {
+                    steps {
+                        sh './mvnw dependency:analyze || true'
+                    }
+                }
+            }
+        }
+
+        stage('Package Backend') {
+            steps {
+                checkout scm
+                sh 'python3 scripts/build_backend.py --step package'
+            }
+        }
+
+        stage('Archive Artifact') {
+            steps {
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
+            }
+        }
+
+        stage('Deploy Backend') {
+            steps {
+                checkout scm
+                sh 'python3 scripts/deploy_backend.py'
+            }
+        }
+
+        stage('Smoke Test Backend') {
+            steps {
+                checkout scm
+                sh 'python3 scripts/smoke_backend.py'
+            }
+        }
+    }
+}
