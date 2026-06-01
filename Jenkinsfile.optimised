@@ -1,12 +1,6 @@
 pipeline {
     agent none // Individual stages orchestrate their own isolated tracking containers
 
-    environment {
-        // Redirects Maven wrapper initialization out of root folders 
-        // to bypass container user ownership blocks completely
-        MAVEN_OPTS = "-Duser.home=${WORKSPACE}/.maven_home"
-    }
-
     stages {
         stage('Parallel Test & Dependency Audit') {
             parallel {
@@ -14,8 +8,8 @@ pipeline {
                     agent {
                         docker {
                             image 'maven:3.9.6-eclipse-temurin-21'
-                            // Mounts your host cache and automatically pre-installs python3 inside the worker container layer
-                            args '-v /var/lib/jenkins/.m2:/root/.m2 --entrypoint="" -u root:root'
+                            // Run as root to ensure full execution privileges for python scripts
+                            args '--entrypoint="" -u root:root'
                         }
                     }
                     steps {
@@ -34,13 +28,14 @@ pipeline {
                     agent {
                         docker {
                             image 'maven:3.9.6-eclipse-temurin-21'
-                            args '-v /var/lib/jenkins/.m2:/root/.m2'
+                            // Mount the permanent cache directory on the host to avoid re-downloads
+                            args '-v /var/lib/jenkins/.m2:/var/lib/jenkins/.m2'
                         }
                     }
                     steps {
                         checkout scm
-                        // Runs analysis safely with local user home permissions active
-                        sh './mvnw dependency:analyze ${MAVEN_OPTS}'
+                        // Enforce the local repository path directly using the clean maven.repo.local flag
+                        sh './mvnw dependency:analyze -Dmaven.repo.local=/var/lib/jenkins/.m2/repository'
                     }
                 }
             }
@@ -50,12 +45,13 @@ pipeline {
             agent {
                 docker {
                     image 'maven:3.9.6-eclipse-temurin-21'
-                    args '-v /var/lib/jenkins/.m2:/root/.m2'
+                    args '-v /var/lib/jenkins/.m2:/var/lib/jenkins/.m2'
                 }
             }
             steps {
                 checkout scm
-                sh './mvnw clean package -DskipTests ${MAVEN_OPTS}'
+                // Apply the exact same local repository configuration rule to packaging
+                sh './mvnw clean package -DskipTests -Dmaven.repo.local=/var/lib/jenkins/.m2/repository'
             }
         }
     }
