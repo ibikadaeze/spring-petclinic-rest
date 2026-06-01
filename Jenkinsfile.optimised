@@ -1,38 +1,32 @@
 pipeline {
-    agent none // Individual stages orchestrate their own isolated tracking containers
+    agent any // Drop agent none to stop Jenkins from auto-calculating docker wrappers
 
     stages {
         stage('Parallel Test & Dependency Audit') {
             parallel {
                 stage('Unit Tests') {
-                    agent {
-                        docker {
-                            image 'maven:3.9.6-eclipse-temurin-21'
-                            // Mount cache to a completely isolated workspace directory to drop global overrides
-                            args '-v /var/lib/jenkins/.m2:/var/lib/jenkins/local_cache -u root:root'
-                        }
-                    }
                     steps {
-                        checkout scm
+                        // Manual docker container instantiation to guarantee 0% variable pollution
                         sh '''
-                            export MAVEN_OPTS=""
-                            ./mvnw test -Dmaven.repo.local=/var/lib/jenkins/local_cache/repository
+                            docker run --rm \
+                              -v /var/lib/jenkins/.m2:/root/.m2 \
+                              -v "${WORKSPACE}":"${WORKSPACE}" \
+                              -w "${WORKSPACE}" \
+                              maven:3.9.6-eclipse-temurin-21 \
+                              ./mvnw test
                         '''
                     }
                 }
 
                 stage('Dependency Audit') {
-                    agent {
-                        docker {
-                            image 'maven:3.9.6-eclipse-temurin-21'
-                            args '-v /var/lib/jenkins/.m2:/var/lib/jenkins/local_cache -u root:root'
-                        }
-                    }
                     steps {
-                        checkout scm
                         sh '''
-                            export MAVEN_OPTS=""
-                            ./mvnw dependency:analyze -Dmaven.repo.local=/var/lib/jenkins/local_cache/repository
+                            docker run --rm \
+                              -v /var/lib/jenkins/.m2:/root/.m2 \
+                              -v "${WORKSPACE}":"${WORKSPACE}" \
+                              -w "${WORKSPACE}" \
+                              maven:3.9.6-eclipse-temurin-21 \
+                              ./mvnw dependency:analyze
                         '''
                     }
                 }
@@ -40,17 +34,14 @@ pipeline {
         }
 
         stage('Package Backend') {
-            agent {
-                docker {
-                    image 'maven:3.9.6-eclipse-temurin-21'
-                    args '-v /var/lib/jenkins/.m2:/var/lib/jenkins/local_cache -u root:root'
-                }
-            }
             steps {
-                checkout scm
                 sh '''
-                    export MAVEN_OPTS=""
-                    ./mvnw clean package -DskipTests -Dmaven.repo.local=/var/lib/jenkins/local_cache/repository
+                    docker run --rm \
+                      -v /var/lib/jenkins/.m2:/root/.m2 \
+                      -v "${WORKSPACE}":"${WORKSPACE}" \
+                      -w "${WORKSPACE}" \
+                      maven:3.9.6-eclipse-temurin-21 \
+                      ./mvnw clean package -DskipTests
                 '''
             }
         }
