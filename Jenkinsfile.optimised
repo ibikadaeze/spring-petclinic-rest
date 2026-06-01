@@ -1,11 +1,5 @@
 pipeline {
-    agent none // Multi-container agent framework configuration
-
-    environment {
-        // OVERRIDE THE CONTAINER HOME DIRECTORY:
-        // Forces Maven wrapper scripts out of root system paths and straight into the writable workspace sandbox
-        HOME = "${WORKSPACE}"
-    }
+    agent none // Individual stages orchestrate their own isolated tracking containers
 
     stages {
         stage('Parallel Test & Dependency Audit') {
@@ -14,13 +8,17 @@ pipeline {
                     agent {
                         docker {
                             image 'maven:3.9.6-eclipse-temurin-21'
-                            // Mount the permanent cache directory on the host to maximize speed
+                            // Maps your host cache path safely
                             args '-v /var/lib/jenkins/.m2:/var/lib/jenkins/.m2'
                         }
                     }
                     steps {
                         checkout scm
-                        sh './mvnw test -Dmaven.repo.local=/var/lib/jenkins/.m2/repository'
+                        // FORCE CLEAR MAVEN_OPTS to delete the broken cached path string
+                        sh '''
+                            export MAVEN_OPTS=""
+                            ./mvnw test -Dmaven.repo.local=/var/lib/jenkins/.m2/repository
+                        '''
                     }
                 }
 
@@ -33,7 +31,11 @@ pipeline {
                     }
                     steps {
                         checkout scm
-                        sh './mvnw dependency:analyze -Dmaven.repo.local=/var/lib/jenkins/.m2/repository'
+                        // FORCE CLEAR MAVEN_OPTS to delete the broken cached path string
+                        sh '''
+                            export MAVEN_OPTS=""
+                            ./mvnw dependency:analyze -Dmaven.repo.local=/var/lib/jenkins/.m2/repository
+                        '''
                     }
                 }
             }
@@ -48,7 +50,11 @@ pipeline {
             }
             steps {
                 checkout scm
-                sh './mvnw clean package -DskipTests -Dmaven.repo.local=/var/lib/jenkins/.m2/repository'
+                // FORCE CLEAR MAVEN_OPTS to delete the broken cached path string
+                sh '''
+                    export MAVEN_OPTS=""
+                    ./mvnw clean package -DskipTests -Dmaven.repo.local=/var/lib/jenkins/.m2/repository
+                '''
             }
         }
     }
