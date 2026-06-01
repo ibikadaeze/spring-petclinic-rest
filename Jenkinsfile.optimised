@@ -8,15 +8,15 @@ pipeline {
                     agent {
                         docker {
                             image 'maven:3.9.6-eclipse-temurin-21'
-                            // Enforces root execution privileges to bypass container user permission blocks permanently
-                            args '-v /var/lib/jenkins/.m2:/root/.m2 -u root:root'
+                            // Mount cache to a completely isolated workspace directory to drop global overrides
+                            args '-v /var/lib/jenkins/.m2:/var/lib/jenkins/local_cache -u root:root'
                         }
                     }
                     steps {
                         checkout scm
                         sh '''
                             export MAVEN_OPTS=""
-                            ./mvnw test
+                            ./mvnw test -Dmaven.repo.local=/var/lib/jenkins/local_cache/repository
                         '''
                     }
                 }
@@ -25,14 +25,14 @@ pipeline {
                     agent {
                         docker {
                             image 'maven:3.9.6-eclipse-temurin-21'
-                            args '-v /var/lib/jenkins/.m2:/root/.m2 -u root:root'
+                            args '-v /var/lib/jenkins/.m2:/var/lib/jenkins/local_cache -u root:root'
                         }
                     }
                     steps {
                         checkout scm
                         sh '''
                             export MAVEN_OPTS=""
-                            ./mvnw dependency:analyze
+                            ./mvnw dependency:analyze -Dmaven.repo.local=/var/lib/jenkins/local_cache/repository
                         '''
                     }
                 }
@@ -43,14 +43,14 @@ pipeline {
             agent {
                 docker {
                     image 'maven:3.9.6-eclipse-temurin-21'
-                    args '-v /var/lib/jenkins/.m2:/root/.m2 -u root:root'
+                    args '-v /var/lib/jenkins/.m2:/var/lib/jenkins/local_cache -u root:root'
                 }
             }
             steps {
                 checkout scm
                 sh '''
                     export MAVEN_OPTS=""
-                    ./mvnw clean package -DskipTests
+                    ./mvnw clean package -DskipTests -Dmaven.repo.local=/var/lib/jenkins/local_cache/repository
                 '''
             }
         }
