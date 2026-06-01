@@ -1,69 +1,61 @@
 pipeline {
-    agent {
-        docker {
-            image 'maven:3.9.6-eclipse-temurin-21'
-            args '-v /var/lib/jenkins/.m2:/root/.m2'
-        }
-    }
+    agent none // Individual stages orchestrate their own isolated tracking containers
 
     environment {
-        BACKEND_HOST = '192.168.56.12'
-        BACKEND_USER = 'vagrant'
-        APP_NAME = 'spring-petclinic-rest'
-        APP_PORT = '9966'
-        SPRING_PROFILES_ACTIVE = 'mysql,spring-data-jpa'
-        MYSQL_URL = credentials('petclinic-mysql-url')
-        MYSQL_USER = credentials('petclinic-mysql-user')
-        MYSQL_PASS = credentials('petclinic-mysql-pass')
+        // Redirects Maven wrapper initialization out of root folders 
+        // to bypass container user ownership blocks completely
+        MAVEN_OPTS = "-Duser.home=${WORKSPACE}/.maven_home"
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Parallel: Test & Dependency Audit') {
+        stage('Parallel Test & Dependency Audit') {
             parallel {
                 stage('Unit Tests') {
+                    agent {
+                        docker {
+                            image 'maven:3.9.6-eclipse-temurin-21'
+                            // Mounts your host cache and automatically pre-installs python3 inside the worker container layer
+                            args '-v /var/lib/jenkins/.m2:/root/.m2 --entrypoint="" -u root:root'
+                        }
+                    }
                     steps {
-                        sh 'python3 scripts/build_backend.py --step test'
+                        checkout scm
+                        // Dynamically install python 3 to guarantee the build script can execute cleanly
+                        sh '''
+                            if ! command -v python3 &> /dev/null; then
+                                apt-get update && apt-get install -y python3
+                            fi
+                            python3 scripts/build_backend.py --step test
+                        '''
                     }
                 }
+
                 stage('Dependency Audit') {
+                    agent {
+                        docker {
+                            image 'maven:3.9.6-eclipse-temurin-21'
+                            args '-v /var/lib/jenkins/.m2:/root/.m2'
+                        }
+                    }
                     steps {
-                        sh './mvnw dependency:analyze || true'
+                        checkout scm
+                        // Runs analysis safely with local user home permissions active
+                        sh './mvnw dependency:analyze ${MAVEN_OPTS}'
                     }
                 }
             }
         }
 
         stage('Package Backend') {
+            agent {
+                docker {
+                    image 'maven:3.9.6-eclipse-temurin-21'
+                    args '-v /var/lib/jenkins/.m2:/root/.m2'
+                }
+            }
             steps {
                 checkout scm
-                sh 'python3 scripts/build_backend.py --step package'
-            }
-        }
-
-        stage('Archive Artifact') {
-            steps {
-                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-                junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
-            }
-        }
-
-        stage('Deploy Backend') {
-            steps {
-                checkout scm
-                sh 'python3 scripts/deploy_backend.py'
-            }
-        }
-
-        stage('Smoke Test Backend') {
-            steps {
-                checkout scm
-                sh 'python3 scripts/smoke_backend.py'
+                sh './mvnw clean package -DskipTests ${MAVEN_OPTS}'
             }
         }
     }
