@@ -8,16 +8,16 @@ pipeline {
                     agent {
                         docker {
                             image 'maven:3.9.6-eclipse-temurin-21'
-                            // Maps your host cache path safely
+                            // Mount your host cache path safely
                             args '-v /var/lib/jenkins/.m2:/var/lib/jenkins/.m2'
                         }
                     }
                     steps {
                         checkout scm
-                        // FORCE CLEAR MAVEN_OPTS to delete the broken cached path string
+                        // FIXED: Added -Duser.home to force the wrapper to use your writable workspace path
                         sh '''
                             export MAVEN_OPTS=""
-                            ./mvnw test -Dmaven.repo.local=/var/lib/jenkins/.m2/repository
+                            ./mvnw test -Duser.home="${WORKSPACE}" -Dmaven.repo.local=/var/lib/jenkins/.m2/repository
                         '''
                     }
                 }
@@ -31,10 +31,10 @@ pipeline {
                     }
                     steps {
                         checkout scm
-                        // FORCE CLEAR MAVEN_OPTS to delete the broken cached path string
+                        // FIXED: Added -Duser.home to force the wrapper to use your writable workspace path
                         sh '''
                             export MAVEN_OPTS=""
-                            ./mvnw dependency:analyze -Dmaven.repo.local=/var/lib/jenkins/.m2/repository
+                            ./mvnw dependency:analyze -Duser.home="${WORKSPACE}" -Dmaven.repo.local=/var/lib/jenkins/.m2/repository
                         '''
                     }
                 }
@@ -50,10 +50,10 @@ pipeline {
             }
             steps {
                 checkout scm
-                // FORCE CLEAR MAVEN_OPTS to delete the broken cached path string
+                // FIXED: Added -Duser.home to force the wrapper to use your writable workspace path
                 sh '''
                     export MAVEN_OPTS=""
-                    ./mvnw clean package -DskipTests -Dmaven.repo.local=/var/lib/jenkins/.m2/repository
+                    ./mvnw clean package -DskipTests -Duser.home="${WORKSPACE}" -Dmaven.repo.local=/var/lib/jenkins/.m2/repository
                 '''
             }
         }
