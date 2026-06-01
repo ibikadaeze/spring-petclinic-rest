@@ -8,16 +8,15 @@ pipeline {
                     agent {
                         docker {
                             image 'maven:3.9.6-eclipse-temurin-21'
-                            // Mount your host cache path safely
-                            args '-v /var/lib/jenkins/.m2:/var/lib/jenkins/.m2'
+                            // Enforces root execution privileges to bypass container user permission blocks permanently
+                            args '-v /var/lib/jenkins/.m2:/root/.m2 -u root:root'
                         }
                     }
                     steps {
                         checkout scm
-                        // FIXED: Added -Duser.home to force the wrapper to use your writable workspace path
                         sh '''
                             export MAVEN_OPTS=""
-                            ./mvnw test -Duser.home="${WORKSPACE}" -Dmaven.repo.local=/var/lib/jenkins/.m2/repository
+                            ./mvnw test
                         '''
                     }
                 }
@@ -26,15 +25,14 @@ pipeline {
                     agent {
                         docker {
                             image 'maven:3.9.6-eclipse-temurin-21'
-                            args '-v /var/lib/jenkins/.m2:/var/lib/jenkins/.m2'
+                            args '-v /var/lib/jenkins/.m2:/root/.m2 -u root:root'
                         }
                     }
                     steps {
                         checkout scm
-                        // FIXED: Added -Duser.home to force the wrapper to use your writable workspace path
                         sh '''
                             export MAVEN_OPTS=""
-                            ./mvnw dependency:analyze -Duser.home="${WORKSPACE}" -Dmaven.repo.local=/var/lib/jenkins/.m2/repository
+                            ./mvnw dependency:analyze
                         '''
                     }
                 }
@@ -45,15 +43,14 @@ pipeline {
             agent {
                 docker {
                     image 'maven:3.9.6-eclipse-temurin-21'
-                    args '-v /var/lib/jenkins/.m2:/var/lib/jenkins/.m2'
+                    args '-v /var/lib/jenkins/.m2:/root/.m2 -u root:root'
                 }
             }
             steps {
                 checkout scm
-                // FIXED: Added -Duser.home to force the wrapper to use your writable workspace path
                 sh '''
                     export MAVEN_OPTS=""
-                    ./mvnw clean package -DskipTests -Duser.home="${WORKSPACE}" -Dmaven.repo.local=/var/lib/jenkins/.m2/repository
+                    ./mvnw clean package -DskipTests
                 '''
             }
         }
