@@ -8,19 +8,13 @@ pipeline {
                     agent {
                         docker {
                             image 'maven:3.9.6-eclipse-temurin-21'
-                            // Run as root to ensure full execution privileges for python scripts
-                            args '--entrypoint="" -u root:root'
+                            args '-v /var/lib/jenkins/.m2:/root/.m2'
                         }
                     }
                     steps {
                         checkout scm
-                        // Dynamically install python 3 to guarantee the build script can execute cleanly
-                        sh '''
-                            if ! command -v python3 &> /dev/null; then
-                                apt-get update && apt-get install -y python3
-                            fi
-                            python3 scripts/build_backend.py --step test
-                        '''
+                        // Run native maven test execution safely connected to your host cache
+                        sh './mvnw test -Dmaven.repo.local=/var/lib/jenkins/.m2/repository'
                     }
                 }
 
@@ -28,13 +22,11 @@ pipeline {
                     agent {
                         docker {
                             image 'maven:3.9.6-eclipse-temurin-21'
-                            // Mount the permanent cache directory on the host to avoid re-downloads
-                            args '-v /var/lib/jenkins/.m2:/var/lib/jenkins/.m2'
+                            args '-v /var/lib/jenkins/.m2:/root/.m2'
                         }
                     }
                     steps {
                         checkout scm
-                        // Enforce the local repository path directly using the clean maven.repo.local flag
                         sh './mvnw dependency:analyze -Dmaven.repo.local=/var/lib/jenkins/.m2/repository'
                     }
                 }
@@ -45,12 +37,11 @@ pipeline {
             agent {
                 docker {
                     image 'maven:3.9.6-eclipse-temurin-21'
-                    args '-v /var/lib/jenkins/.m2:/var/lib/jenkins/.m2'
+                    args '-v /var/lib/jenkins/.m2:/root/.m2'
                 }
             }
             steps {
                 checkout scm
-                // Apply the exact same local repository configuration rule to packaging
                 sh './mvnw clean package -DskipTests -Dmaven.repo.local=/var/lib/jenkins/.m2/repository'
             }
         }
