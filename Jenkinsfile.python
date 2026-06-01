@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+
+    tools {
+        jdk 'Java 21'
+        maven 'Maven 3'
+    }
+
+    environment {
+        BACKEND_HOST = '192.168.56.12'
+        BACKEND_USER = 'vagrant'
+        APP_NAME = 'spring-petclinic-rest'
+        APP_PORT = '9966'
+        SPRING_PROFILES_ACTIVE = 'mysql,spring-data-jpa'
+        MYSQL_URL = credentials('petclinic-mysql-url')
+        MYSQL_USER = credentials('petclinic-mysql-user')
+        MYSQL_PASS = credentials('petclinic-mysql-pass')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Backend') {
+            steps {
+                sh 'python3 scripts/build_backend.py'
+            }
+        }
+
+        stage('Archive Artifact') {
+            steps {
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
+            }
+        }
+
+        stage('Deploy Backend') {
+            steps {
+                sh 'python3 scripts/deploy_backend.py'
+            }
+        }
+
+        stage('Smoke Test Backend') {
+            steps {
+                sh 'python3 scripts/smoke_backend.py'
+            }
+        }
+    }
+}

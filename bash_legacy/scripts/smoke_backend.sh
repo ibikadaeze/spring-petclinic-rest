@@ -4,7 +4,6 @@ set -euo pipefail
 : "${BACKEND_HOST:?BACKEND_HOST is required}"
 : "${APP_PORT:?APP_PORT is required}"
 
-# KEEPING THE REQUIRED /petclinic CONTEXT PREFIX
 HEALTH_URL="http://${BACKEND_HOST}:${APP_PORT}/petclinic/actuator/health"
 API_URL="http://${BACKEND_HOST}:${APP_PORT}/petclinic/api/pettypes"
 
@@ -32,8 +31,6 @@ done
 
 if [ $ATTEMPT -gt $MAX_ATTEMPTS ]; then
   echo "ERROR: Backend failed to respond to health check after $MAX_ATTEMPTS attempts (${MAX_ATTEMPTS}*${WAIT_INTERVAL}s = $(($MAX_ATTEMPTS * $WAIT_INTERVAL))s total)."
-  echo "Checking application logs on backend..."
-  ssh "${BACKEND_USER}@${BACKEND_HOST}" "tail -50 /tmp/${APP_NAME}.log" || true
   exit 1
 fi
 
